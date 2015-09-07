@@ -1,0 +1,53 @@
+import RPi.GPIO as GPIO
+import sensor
+import time
+from threading import Timer
+
+MAX_ROUND = 1
+rain_time = []
+rain = 0
+rain_total = 0
+rain_result = 0
+
+class RAIN(sensor.Sensor):
+        requiredData = ["measurement","pinNumber","samplingtime"]
+        optionalData = ["unit"]
+        def __init__(self,data):
+               GPIO.setmode(GPIO.BCM)
+               GPIO.setwarnings(False)
+               GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+               time_stamp = time.time()
+               GPIO.add_event_detect(27, GPIO.FALLING, callback=self.pulse)
+               rain_timer = Timer(60, self.samplingtime)
+               rain_timer.start()
+               self.sensorName = "RAIN"
+               self.pinNum = int(data["pinNumber"])
+               if "rain_fall" in data["measurement"].lower():
+                       self.valName = "RainCollector"
+                       self.valUnit = "Millimeter per hours"
+                       self.valSymbol = "mmph"
+
+        def pulse(self,data):
+                global rain
+                rain = rain + 1
+        def samplingtime(self) :
+                global rain
+                global rain_time
+                global rain_total
+                global rain_result
+
+                rain_time.append(rain)
+                rain =0
+                if len(rain_time) > MAX_ROUND :
+                        rain_time.pop(0)
+                rain_timer = Timer(60,self.samplingtime)
+  	rain_timer.start()
+
+
+                rain_total = sum(rain_time)
+                rain_result = float(rain_total*0.2)
+
+
+        def getVal(self):
+
+                return rain_result

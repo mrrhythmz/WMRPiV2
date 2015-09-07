@@ -1,0 +1,56 @@
+import RPi.GPIO as GPIO
+import sensor
+import time
+from threading import Timer
+
+MAX_ROUND = 12
+wind = 0
+wind_time = []
+rain = 0
+wind_total = 0
+wind_result = 0
+
+class WIND(sensor.Sensor):
+        requiredData = ["measurement","pinNumber","samplingtime"]
+        optionalData = ["unit"]
+
+        def __init__(self,data):
+                GPIO.setmode(GPIO.BCM)
+                GPIO.setwarnings(False)
+                GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                time_stamp = time.time()
+                GPIO.add_event_detect(17, GPIO.FALLING, callback=self.rounds, bouncetime=20)
+                wind_timer = Timer(5, self.samplingtime)
+                wind_timer.start()
+                self.sensorName = "WIND"
+                self.pinNum = int(data["pinNumber"])
+                if "wind_speed" in data["measurement"].lower():
+                        self.valName = "Windspeed"
+                        self.valUnit = "Kilometer per hours"
+                        self.valSymbol = "Kmph"
+
+        def rounds(self,data):
+                global wind
+                wind = wind + 1
+        def samplingtime(self) :
+                global wind
+                global wind_time
+                global wind_total
+                global wind_result
+
+                wind_time.append(wind)
+                wind = 0
+                if len(wind_time) > MAX_ROUND :
+  		 wind_time.pop(0)
+                wind_timer = Timer(5,self.samplingtime)
+                wind_timer.start()
+
+
+                wind_total = sum(wind_time)
+                wind_result = (wind_total/60.0)*2.5*1.609344
+                #wind = 0
+
+        def getVal(self):
+
+                return wind_result
+

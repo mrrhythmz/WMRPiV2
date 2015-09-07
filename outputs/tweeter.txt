@@ -1,0 +1,81 @@
+import output
+import requests
+import json
+import tweepy
+from time import sleep
+from subprocess import call
+from datetime import datetime
+import time
+from threading import Timer
+
+class twitter(output.Output):
+        requiredData = ["consumer_key","consumer_secret","access_token","access_token_secret"]
+        optionalData = []
+#       round = 15
+        def __init__(self,data):
+                consumer_key=data["consumer_key"]
+                consumer_secret=data["consumer_secret"]
+                access_token=data["access_token"]
+                access_token_secret=data["access_token_secret"]
+
+                # OAuth process, using the keys and tokens
+                auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+                auth.set_access_token(access_token, access_token_secret)
+
+                # Creation of the actual interface, using authentication
+                self.api = tweepy.API(auth)
+
+
+
+        def photo_tweet(self,twit_text=[]):
+                t = datetime.now()
+                now = t.strftime('%Y%m%d-%H%M%S')
+                tweettime = t.strftime('%Y/%m/%d %H:%M:%S UTC')
+                photo_path = "/tmp/" + now + '.jpg'
+                cmd = 'raspistill  -t 500 -w 1024 -h 768 -o ' + photo_path
+                print 'cmd ' +cmd
+                print "about to take photo"
+                call ([cmd], shell=True)
+                print "photo taken"
+                print twit_text
+                status =' #AirPi_RMUTSV ' + tweettime
+                # Add text overlay of data on the photo we just took
+     print "about to set overlay_text variable"
+                overlay_text = "/usr/bin/convert "+ photo_path + "  -pointsize 16 -fill white -annotate +40+670 '" + tweettime + "' "
+                overlay_text += " -annotate +40+730 'Create By Petchara & Arnon Computer Engineering #4 RMUTSV ' "
+                overlay_text += " -annotate +40+700 'Weather Station with Raspberry Pi Project' "
+                y = 670
+                for i in twit_text:
+                        y = y - 30
+                        overlay_text += " -annotate +40+" + str(y) + " '" + str(i) + "'"
+                overlay_text += " /tmp/WSRPi.jpg"
+                print "overlaying_text"
+                call ([overlay_text], shell=True)
+
+           #     print "adding your logo" # you'll need a file called overlay.png in /home/pi
+            #    overlay_text = '/usr/bin/convert '+ photo_path + ' /home/pi/rmutsv.png -geometry +1+1 -composite ' + photo_path
+             #   call ([overlay_text], shell=True)
+              #  print "added logo 1"
+
+                print "tweeting photo"
+                self.api.update_with_media("/tmp/WSRPi.jpg", status=status)
+                print "photo tweeted, deleting .jpg"
+                cmd = 'rm ' + photo_path
+                call ([cmd], shell=True)
+
+
+        def outputData(self,dataPoints):
+
+
+                twit_text = []
+                time = datetime.now()
+                minute = time.minute
+#               self.round += 1
+#               if self.round >= 15:
+                if minute == 15 or minute == 30 or  minute == 45 or  minute == 0 :
+                        for i in dataPoints:
+                                twit_text.append(i["name"] + " " + str(i["value"]) + " " + i["symbol"])
+                        print twit_text
+                        self.photo_tweet(twit_text)
+                        self.round = 0
+                return True

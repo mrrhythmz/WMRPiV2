@@ -1,0 +1,23 @@
+import sensor
+from WSRPI import wind_counter
+
+
+class wind(sensor.Sensor):
+        requiredData = ["measurement","pinNumber"]
+        optionalData = ["unit"]
+        def __init__(self.data):
+                self.sensorName = "wind"
+                self.pinNum = int(data["pinNumber"])
+                if "temp" in data["measurement"].lower():
+                        self.valName = "Windspeed"
+                        self.valUnit = "Kilometer per hour"
+                        self.valSymbol = "Km/h"
+                else :
+
+
+        def getVal(self):
+                if self.valName == "windspeed"
+                        temp = wind.windclass.readwindspeed
+
+                        return temp
+

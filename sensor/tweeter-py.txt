@@ -1,0 +1,113 @@
+#!/usr/bin/env python2.7
+# tweetpic6BLOG.py by Alex Eames http://raspi.tv/?p=6004
+# take a photo with the Pi camera, overlay some text
+# then overlay a small logo and tweet the final image
+import tweepy
+from time import sleep
+from subprocess import call
+from datetime import datetime
+import sys
+import sensor
+import time
+from threading import Timer
+
+#if len(sys.argv) >= 2:
+#       twitter_text = sys.argv[1]
+
+#else:
+#       twitter_text = "Photo from insert your location here"
+
+#if len(twitter_text) > 110:
+#       print "tweet not sent. Too long. 110 chars Max. Try again."
+#       sys.exit()
+
+
+        # OAuth process, using the keys and tokens
+#        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+#        auth.set_access_token(access_token, access_token_secret)
+
+        # Creation of the actual interface, using authentication
+#        api = tweepy.API(auth)
+
+class Twitter(sensor.Sensor):
+        requiredData = ["measurement","consumer_key","consumer_secret","access_token","access_token_secret"]
+        optionalData = []
+
+        def __init__(self,data):
+                consumer_key=data["consumer_key"]
+                consumer_secret=data["consumer_secret"]
+                access_token=data["access_token"]
+                access_token_secret=data["access_token_secret"]
+                self.sensorName = "Twitter"
+                if "twit_upload" in data["measurement"].lower():
+                        self.valName = "Picture On twitter"
+  self.valUnit = "none"
+                        self.valSymbol = "none"
+
+
+
+             #if len(sys.argv) >= 2:
+        #               twitter_text = sys.argv[1]
+
+        #       else:
+                #       twitter_text = "Photo from insert your location here"
+
+#               if len(twitter_text) > 110:
+ #                      print "tweet not sent. Too long. 110 chars Max. Try again."
+#                       sys.exit()
+
+
+                # OAuth process, using the keys and tokens
+                auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+                auth.set_access_token(access_token, access_token_secret)
+
+                # Creation of the actual interface, using authentication
+                self.api = tweepy.API(auth)
+                self.photo_tweet()
+
+        #def getVal(self):
+        #def sensorData(self,dataPoint):
+
+        def photo_tweet(self):
+                global cmd
+                global overlay_text
+                global logtwit
+                global twit_time
+                i = datetime.now()
+                now = i.strftime('%Y%m%d-%H%M%S')
+                tweettime = i.strftime('%Y/%m/%d %H:%M:%S UTC')
+                photo_name = now + '.jpg'
+                cmd = 'raspistill -vf -hf -t 500 -w 1024 -h 768 -o /home/pi/' + photo_name
+                print 'cmd ' +cmd
+                print "about to take photo"
+                call ([cmd], shell=True)
+                print "photo taken"
+                photo_path = '/home/pi/' + photo_name
+      status = ' #AirPi_RMUTSV ' + tweettime
+                # Add text overlay of data on the photo we just took
+                print "about to set overlay_text variable"
+                overlay_text = "/usr/bin/convert "+ photo_path + "  -pointsize 16 -fill white -annotate +40+730 '" + tweettime + "' "
+                overlay_text += " -pointsize 16  -fill white -annotate +40+700 'AirPi Camera Test By Petchara Inthanon ' " + photo_path
+
+                print "overlaying text"
+                call ([overlay_text], shell=True)
+
+                print "adding your logo" # you'll need a file called overlay.png in /home/pi
+                overlay_text = '/usr/bin/convert '+ photo_path + ' /home/pi/overlay.png -geometry +1+1 -composite ' + photo_path
+                call ([overlay_text], shell=True)
+                print "added logo 1"
+
+                print "tweeting photo"
+                self.logtwit = self.api.update_with_media(photo_path, status=status)
+                print "photo tweeted, deleting .jpg"
+                cmd = 'rm ' + photo_path
+                call ([cmd], shell=True)
+                twit_timer = Timer(900,self.photo_tweet)
+                twit_timer.start()
+
+#       print 'start of program'
+#       photo_tweet()
+
+        def getVal(self):
+
+                return "https://twitter.com/" + self.logtwit.user.screen_name + "/status/" + self.logtwit.id_str

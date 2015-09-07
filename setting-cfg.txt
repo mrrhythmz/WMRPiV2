@@ -1,0 +1,4 @@
+[Main]
+uploadDelay = 60        ;how long to wait before uploading again
+redPin=10
+greenPin=22

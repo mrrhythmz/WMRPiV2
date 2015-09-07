@@ -1,0 +1,44 @@
+ if self.sensorName=="MiCS-2710":
+                        r = self.get_NO2(rs=resOut,r0=90000)
+                        self.valUnit = "part per million"
+                        self.valSymbol = "ppm"
+                elif self.sensorName=="MiCS-5525":
+                        r = self.get_CO(rs=resOut,r0=190000)
+                        self.valUnit = "part per million"
+                        self.valSymbol = "ppm"
+                elif self.sensorName=="LDR":
+                        r = self.Light_level(rs=resOut)
+                        self.valUnit = "LUX"
+                        self.valSymbol = "Lux"
+                else:
+                        r = resOut
+                return r
+
+ def get_NO2(self, rs, r0):
+                conversions = [((0,100),(0,0.25)),((100,133),(0.25,0.325)),((133,167),(0.325,0.475)),((167,200),(0.475,0.575)),((200,233),(0.575,0.665)),((233,267),(0.666,0.75))]
+                rsper = 100*(float(rs)/r0)
+                for a in conversions:
+                        if a[0][0]<=rsper<a[0][1]:
+                                mid,hi = rsper-a[0][0],a[0][1]-a[0][0]
+                                sf = float(mid)/hi
+                                r = sf * (a[1][1]-a[1][0]) + a[1][0]
+                                return r
+                return rsper * 0.002808988764
+
+        def get_CO(self, rs, r0):
+                conversions = [((110,90),(0,1.5)),((90,85),(1.5,5)),((85,80),(5,6)),((80,75),(6,7)),((75,70),(7,8)),((70,65),(8,12)),((65,60),(12,14)),((60,55),(14,18)),((55,50),(18,22))]
+                rsper = 100*(float(rs)/r0)
+                for a in conversions:
+                        if a[0][0]>=rsper>a[0][1]:
+                                mid,hi = rsper-a[0][0],a[0][1]-a[0][0]
+                                sf = float(mid)/hi
+                                r = sf * (a[1][1]-a[1][0]) + a[1][0]
+                                return r
+                if rsper>110:
+                        return 0
+                else:
+                        return (1/float(rsper))*1100
+
+        def Light_level(self, rs):
+                r = pow(2.71828284,((math.log10(float(rs)/1000)/math.log10(2.71828284))-4.125)/-0.6704)
+                return r
